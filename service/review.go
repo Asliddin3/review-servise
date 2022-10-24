@@ -22,6 +22,16 @@ func NewReviewService(db *sqlx.DB, log l.Logger) *ReviewService {
 		logger:  log,
 	}
 }
+
+func (s ReviewService) GetPostReviews(ctx context.Context, req *pb.PostId) (*pb.ReviewsList, error) {
+	res, err := s.storage.Review().GetPostReviews(req)
+	if err != nil {
+		s.logger.Error("error getting list reviews", l.Any("error getting reviews", err))
+		return &pb.ReviewsList{}, status.Error(codes.Internal, "errir getting reviews")
+	}
+	return res, nil
+}
+
 func (s *ReviewService) DeleteReview(ctx context.Context, req *pb.PostId) (*pb.Empty, error) {
 	res, err := s.storage.Review().DeleteReview(req)
 	if err != nil {
@@ -31,7 +41,7 @@ func (s *ReviewService) DeleteReview(ctx context.Context, req *pb.PostId) (*pb.E
 	return res, nil
 }
 
-func (s *ReviewService) CreateReview(ctx context.Context, req *pb.Review) (*pb.Review, error) {
+func (s *ReviewService) CreateReview(ctx context.Context, req *pb.ReviewRequest) (*pb.Review, error) {
 	Review, err := s.storage.Review().CreateReview(req)
 	if err != nil {
 		s.logger.Error("error while creating Review", l.Any("error creating Review", err))

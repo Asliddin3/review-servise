@@ -14,6 +14,28 @@ type reviewRepo struct {
 func NewReviewRepo(db *sqlx.DB) *reviewRepo {
 	return &reviewRepo{db: db}
 }
+
+func (r *reviewRepo) GetPostReviews(req *pb.PostId) (*pb.ReviewsList, error) {
+	row, err := r.db.Query(`
+	select id,customer_id,review,description from reviewdb where post_id=$1
+	`, req.Id)
+	if err != nil {
+		return &pb.ReviewsList{}, err
+	}
+	reviewList := pb.ReviewsList{}
+	for row.Next() {
+		reviewResp := pb.ReviewRespList{}
+		err := row.Scan(&reviewResp.Id,
+			&reviewResp.CustomerId,
+			&reviewResp.Description)
+		if err != nil {
+			return &pb.ReviewsList{}, err
+		}
+		reviewList.Reviews = append(reviewList.Reviews, &reviewResp)
+	}
+	return &reviewList, nil
+}
+
 func (r *reviewRepo) DeleteReview(req *pb.PostId) (*pb.Empty, error) {
 	fmt.Println(req)
 	_, err := r.db.Exec(`
@@ -38,7 +60,7 @@ func (r *reviewRepo) GetPostReview(req *pb.PostId) (*pb.PostReview, error) {
 	if count != 0 {
 		err = r.db.QueryRow(
 			`select ROUND(AVG(review),2),count(*) from review where post_id=$1`, req.Id,
-		).Scan(&reviewResp.Review, &reviewResp.Count)
+		).Scan(&reviewResp.OveralReview, &reviewResp.Count)
 		fmt.Println(err, reviewResp)
 		if err != nil {
 			return &pb.PostReview{}, err
@@ -49,7 +71,7 @@ func (r *reviewRepo) GetPostReview(req *pb.PostId) (*pb.PostReview, error) {
 	return &reviewResp, nil
 }
 
-func (r *reviewRepo) CreateReview(req *pb.Review) (*pb.Review, error) {
+func (r *reviewRepo) CreateReview(req *pb.ReviewRequest) (*pb.Review, error) {
 	postResp := pb.Review{}
 	err := r.db.QueryRow(`
 	insert into review(review,description,post_id,customer_id)

@@ -1,1 +1,1 @@
-DROP Table review;
+DROP Table if EXISTS review;
