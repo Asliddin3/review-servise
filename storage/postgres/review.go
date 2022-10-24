@@ -15,9 +15,20 @@ func NewReviewRepo(db *sqlx.DB) *reviewRepo {
 	return &reviewRepo{db: db}
 }
 
+func (r *reviewRepo) GetReviewById(req *pb.ReviewId) (*pb.Review, error) {
+	reviewResp := pb.Review{}
+	err := r.db.QueryRow(`
+	select id,post_id,customer_id,description,review from review where id=$1
+	`, req.Id).Scan(&reviewResp.Id, &reviewResp.PostId, &reviewResp.Description, &reviewResp.Review)
+	if err != nil {
+		return &pb.Review{}, err
+	}
+	return &reviewResp, nil
+}
+
 func (r *reviewRepo) GetPostReviews(req *pb.PostId) (*pb.ReviewsList, error) {
 	row, err := r.db.Query(`
-	select id,customer_id,review,description from reviewdb where post_id=$1
+	select id,customer_id,review,description from review where post_id=$1
 	`, req.Id)
 	if err != nil {
 		return &pb.ReviewsList{}, err

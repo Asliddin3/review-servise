@@ -27,8 +27,22 @@ func NewReviewService(cleint *grpcClient.ServiceManager, db *sqlx.DB, log l.Logg
 	}
 }
 
+func (s *ReviewService) GetReviewById(ctx context.Context, req *pb.ReviewId) (*pb.Review, error) {
+	res, err := s.storage.Review().GetReviewById(req)
+	if err != nil {
+		s.logger.Error("error getting review by id", l.Any("error getting review by id", err))
+		return &pb.Review{}, status.Error(codes.Internal, "something went wrong")
+	}
+	return res, nil
+
+}
+
 func (s *ReviewService) GetPostReviews(ctx context.Context, req *pb.PostId) (*pb.ReviewsList, error) {
 	res, err := s.storage.Review().GetPostReviews(req)
+	if err != nil {
+		s.logger.Error("error getting list reviews", l.Any("error getting reviews", err))
+		return &pb.ReviewsList{}, status.Error(codes.Internal, "errir getting reviews")
+	}
 	for i, reviews := range res.Reviews {
 		customerResp, err := s.client.CustomerService().GetCustomerInfo(context.Background(), &customer.CustomerId{Id: reviews.CustomerId})
 		if err != nil {
@@ -39,10 +53,7 @@ func (s *ReviewService) GetPostReviews(ctx context.Context, req *pb.PostId) (*pb
 		reviews.LastName = customerResp.LastName
 		res.Reviews[i] = reviews
 	}
-	if err != nil {
-		s.logger.Error("error getting list reviews", l.Any("error getting reviews", err))
-		return &pb.ReviewsList{}, status.Error(codes.Internal, "errir getting reviews")
-	}
+
 	return res, nil
 }
 
