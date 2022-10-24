@@ -11,5 +11,5 @@ type ReviewStorageI interface {
 	DeleteReview(*pb.PostId) (*pb.Empty, error)
 	GetPostOverall(*pb.PostId) (*pb.PostReview, error)
 	GetPostReviews(*pb.PostId) (*pb.ReviewsList, error)
-	GetReviewById(*pb.ReviewId) (*pb.Review, error)
+	GetReviewById(*pb.ReviewId) (*pb.ReviewResp, error)
 }

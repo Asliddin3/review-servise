@@ -15,20 +15,21 @@ func NewReviewRepo(db *sqlx.DB) *reviewRepo {
 	return &reviewRepo{db: db}
 }
 
-func (r *reviewRepo) GetReviewById(req *pb.ReviewId) (*pb.Review, error) {
-	reviewResp := pb.Review{}
+func (r *reviewRepo) GetReviewById(req *pb.ReviewId) (*pb.ReviewResp, error) {
+	reviewResp := pb.ReviewResp{}
 	err := r.db.QueryRow(`
-	select id,post_id,customer_id,description,review from review where id=$1
-	`, req.Id).Scan(&reviewResp.Id, &reviewResp.PostId, &reviewResp.Description, &reviewResp.Review)
+	select id,post_id,customer_id,description,review,created_at,updated_at from review where id=$1 and deleted_at is null
+	`, req.Id).Scan(&reviewResp.Id, &reviewResp.PostId, &reviewResp.Description, &reviewResp.Review,
+	&reviewResp.CreatedAt,&reviewResp.UpdatedAt)
 	if err != nil {
-		return &pb.Review{}, err
+		return &pb.ReviewResp{}, err
 	}
 	return &reviewResp, nil
 }
 
 func (r *reviewRepo) GetPostReviews(req *pb.PostId) (*pb.ReviewsList, error) {
 	row, err := r.db.Query(`
-	select id,customer_id,review,description from review where post_id=$1
+	select id,customer_id,review,description from review where post_id=$1 and deleted_at is null
 	`, req.Id)
 	if err != nil {
 		return &pb.ReviewsList{}, err
@@ -38,6 +39,7 @@ func (r *reviewRepo) GetPostReviews(req *pb.PostId) (*pb.ReviewsList, error) {
 		reviewResp := pb.ReviewRespList{}
 		err := row.Scan(&reviewResp.Id,
 			&reviewResp.CustomerId,
+			&reviewResp.Review,
 			&reviewResp.Description)
 		if err != nil {
 			return &pb.ReviewsList{}, err
@@ -50,7 +52,7 @@ func (r *reviewRepo) GetPostReviews(req *pb.PostId) (*pb.ReviewsList, error) {
 func (r *reviewRepo) DeleteReview(req *pb.PostId) (*pb.Empty, error) {
 	fmt.Println(req)
 	_, err := r.db.Exec(`
-	delete from review where post_id=$1
+	update review set deleted_at=current_timestamp where post_id=$1
 	`, req.Id)
 	if err != nil {
 		return &pb.Empty{}, err
@@ -63,7 +65,7 @@ func (r *reviewRepo) GetPostOverall(req *pb.PostId) (*pb.PostReview, error) {
 	fmt.Println(req.Id)
 	count := 0
 	err := r.db.QueryRow(`
-	select count(*) from review where post_id=$1
+	select count(*) from review where post_id=$1 and deleted_at is null
 	`, req.Id).Scan(&count)
 
 	if err != nil {
@@ -72,7 +74,7 @@ func (r *reviewRepo) GetPostOverall(req *pb.PostId) (*pb.PostReview, error) {
 
 	if count != 0 {
 		err = r.db.QueryRow(
-			`select ROUND(AVG(review),2),count(*) from review where post_id=$1`, req.Id,
+			`select ROUND(AVG(review),2),count(*) from review where post_id=$1 and deleted_at is null`, req.Id,
 		).Scan(&reviewResp.OveralReview, &reviewResp.Count)
 		fmt.Println(err, reviewResp)
 		if err != nil {
@@ -87,8 +89,8 @@ func (r *reviewRepo) CreateReview(req *pb.ReviewRequest) (*pb.Review, error) {
 	postResp := pb.Review{}
 	err := r.db.QueryRow(`
 	insert into review(review,description,post_id,customer_id)
-	values($1,$2,$3,$4) returning review,description,post_id,customer_id
-	`, req.Review, req.Description, req.PostId, req.CustomerId).Scan(&postResp.Review, &postResp.Description, &postResp.PostId, &postResp.CustomerId)
+	values($1,$2,$3,$4) returning id,review,description,post_id,customer_id
+	`, req.Review, req.Description, req.PostId, req.CustomerId).Scan(&postResp.Id, &postResp.Review, &postResp.Description, &postResp.PostId, &postResp.CustomerId)
 	if err != nil {
 		return &pb.Review{}, err
 	}

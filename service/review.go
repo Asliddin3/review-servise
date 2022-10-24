@@ -27,11 +27,11 @@ func NewReviewService(cleint *grpcClient.ServiceManager, db *sqlx.DB, log l.Logg
 	}
 }
 
-func (s *ReviewService) GetReviewById(ctx context.Context, req *pb.ReviewId) (*pb.Review, error) {
+func (s *ReviewService) GetReviewById(ctx context.Context, req *pb.ReviewId) (*pb.ReviewResp, error) {
 	res, err := s.storage.Review().GetReviewById(req)
 	if err != nil {
 		s.logger.Error("error getting review by id", l.Any("error getting review by id", err))
-		return &pb.Review{}, status.Error(codes.Internal, "something went wrong")
+		return &pb.ReviewResp{}, status.Error(codes.Internal, "something went wrong")
 	}
 	return res, nil
 
