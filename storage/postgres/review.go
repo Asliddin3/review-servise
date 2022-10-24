@@ -46,17 +46,19 @@ func (r *reviewRepo) DeleteReview(req *pb.PostId) (*pb.Empty, error) {
 	}
 	return &pb.Empty{}, nil
 }
-func (r *reviewRepo) GetPostReview(req *pb.PostId) (*pb.PostReview, error) {
+
+func (r *reviewRepo) GetPostOverall(req *pb.PostId) (*pb.PostReview, error) {
 	reviewResp := pb.PostReview{}
 	fmt.Println(req.Id)
 	count := 0
 	err := r.db.QueryRow(`
 	select count(*) from review where post_id=$1
 	`, req.Id).Scan(&count)
+
 	if err != nil {
 		return &pb.PostReview{}, err
 	}
-	fmt.Println(count)
+
 	if count != 0 {
 		err = r.db.QueryRow(
 			`select ROUND(AVG(review),2),count(*) from review where post_id=$1`, req.Id,
@@ -67,7 +69,6 @@ func (r *reviewRepo) GetPostReview(req *pb.PostId) (*pb.PostReview, error) {
 		}
 	}
 
-	fmt.Println(reviewResp)
 	return &reviewResp, nil
 }
 

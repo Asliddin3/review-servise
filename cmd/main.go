@@ -8,6 +8,7 @@ import (
 	"github.com/Asliddin3/review-servise/pkg/db"
 	"github.com/Asliddin3/review-servise/pkg/logger"
 	"github.com/Asliddin3/review-servise/service"
+	grpcClient "github.com/Asliddin3/review-servise/service/grpc_client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -26,14 +27,19 @@ func main() {
 	if err != nil {
 		log.Fatal("sqlx connection to postgres error", logger.Error(err))
 	}
-	postService := service.NewReviewService(connDb, log)
+	grpcClient, err := grpcClient.New(cfg)
+	if err != nil {
+		log.Fatal("error while connect to clients", logger.Error(err))
+	}
+
+	postService := service.NewReviewService(grpcClient, connDb, log)
 	lis, err := net.Listen("tcp", cfg.RPCPort)
 	if err != nil {
 		log.Fatal("Error while listening: %v", logger.Error(err))
 	}
 	s := grpc.NewServer()
 	reflection.Register(s)
-	pb.RegisterReviewServiceServer(s,postService)
+	pb.RegisterReviewServiceServer(s, postService)
 	log.Info("main: server runing",
 		logger.String("port", cfg.RPCPort))
 	if err := s.Serve(lis); err != nil {
