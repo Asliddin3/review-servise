@@ -34,7 +34,15 @@ func (s *ReviewService) GetReviewById(ctx context.Context, req *pb.ReviewId) (*p
 		return &pb.ReviewResp{}, status.Error(codes.Internal, "something went wrong")
 	}
 	return res, nil
+}
 
+func (s *ReviewService) GetCustomerReviews(ctx context.Context, req *pb.CustomerId) (*pb.CustomerReviewList, error) {
+	reivewList, err := s.storage.Review().GetCustomerReviews(req)
+	if err != nil {
+		s.logger.Error("error while getting customer reviews", l.Any("error gettin review customer", err))
+		return &pb.CustomerReviewList{}, status.Error(codes.Internal, "something went wrong")
+	}
+	return reivewList, nil
 }
 
 func (s *ReviewService) GetPostReviews(ctx context.Context, req *pb.PostId) (*pb.ReviewsList, error) {
@@ -57,7 +65,7 @@ func (s *ReviewService) GetPostReviews(ctx context.Context, req *pb.PostId) (*pb
 	return res, nil
 }
 
-func (s *ReviewService) DeleteReview(ctx context.Context, req *pb.PostId) (*pb.Empty, error) {
+func (s *ReviewService) DeleteReview(ctx context.Context, req *pb.ReviewId) (*pb.Empty, error) {
 	res, err := s.storage.Review().DeleteReview(req)
 	if err != nil {
 		s.logger.Error("error deleting review", l.Any("error deleting", err))

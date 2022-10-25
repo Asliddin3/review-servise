@@ -19,18 +19,40 @@ func (r *reviewRepo) GetReviewById(req *pb.ReviewId) (*pb.ReviewResp, error) {
 	reviewResp := pb.ReviewResp{}
 	err := r.db.QueryRow(`
 	select id,post_id,customer_id,description,review,created_at,updated_at from review where id=$1 and deleted_at is null
-	`, req.Id).Scan(&reviewResp.Id, &reviewResp.PostId, &reviewResp.Description, &reviewResp.Review,
-	&reviewResp.CreatedAt,&reviewResp.UpdatedAt)
+	`, req.Id).Scan(&reviewResp.Id, &reviewResp.PostId, &reviewResp.CustomerId, &reviewResp.Description, &reviewResp.Review,
+		&reviewResp.CreatedAt, &reviewResp.UpdatedAt)
 	if err != nil {
 		return &pb.ReviewResp{}, err
 	}
 	return &reviewResp, nil
 }
 
+func (s *reviewRepo) GetCustomerReviews(req *pb.CustomerId) (*pb.CustomerReviewList, error) {
+	rows, err := s.db.Query(`
+	select id,description,review,post_id,created_at,updated_at from review where customer_id=$1 and deleted_at is null
+	`, req.Id)
+	if err != nil {
+		return &pb.CustomerReviewList{}, err
+	}
+	reviewList := pb.CustomerReviewList{}
+	for rows.Next() {
+		reviewResp := pb.CustomerReivewResp{}
+		err := rows.Scan(&reviewResp.Id, &reviewResp.Description, &reviewResp.Review,
+			&reviewResp.PostId, &reviewResp.CreatedAt, &reviewResp.UpdatedAt)
+		if err != nil {
+			return &pb.CustomerReviewList{}, err
+		}
+		reviewList.ReviewList = append(reviewList.ReviewList, &reviewResp)
+	}
+	return &reviewList, nil
+}
+
 func (r *reviewRepo) GetPostReviews(req *pb.PostId) (*pb.ReviewsList, error) {
+	fmt.Println(req.Id)
 	row, err := r.db.Query(`
 	select id,customer_id,review,description from review where post_id=$1 and deleted_at is null
 	`, req.Id)
+	fmt.Println(err)
 	if err != nil {
 		return &pb.ReviewsList{}, err
 	}
@@ -46,13 +68,14 @@ func (r *reviewRepo) GetPostReviews(req *pb.PostId) (*pb.ReviewsList, error) {
 		}
 		reviewList.Reviews = append(reviewList.Reviews, &reviewResp)
 	}
+	fmt.Println(reviewList)
 	return &reviewList, nil
 }
 
-func (r *reviewRepo) DeleteReview(req *pb.PostId) (*pb.Empty, error) {
+func (r *reviewRepo) DeleteReview(req *pb.ReviewId) (*pb.Empty, error) {
 	fmt.Println(req)
 	_, err := r.db.Exec(`
-	update review set deleted_at=current_timestamp where post_id=$1
+	update review set deleted_at=current_timestamp where id=$1
 	`, req.Id)
 	if err != nil {
 		return &pb.Empty{}, err
