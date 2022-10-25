@@ -109,6 +109,17 @@ func (r *reviewRepo) GetPostOverall(req *pb.PostId) (*pb.PostReview, error) {
 }
 
 func (r *reviewRepo) CreateReview(req *pb.ReviewRequest) (*pb.Review, error) {
+	var id int
+	existReview := r.db.QueryRow(`
+	select Count(*) from review where customer_id=$1 and post_id=$2
+	`, req.CustomerId, req.PostId).Scan(&id)
+	if existReview != nil {
+		return &pb.Review{}, existReview
+	}
+	fmt.Println(id)
+	if id != 0 {
+		return &pb.Review{}, nil
+	}
 	postResp := pb.Review{}
 	err := r.db.QueryRow(`
 	insert into review(review,description,post_id,customer_id)
