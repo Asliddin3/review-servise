@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/Asliddin3/review-servise/config"
@@ -22,8 +23,9 @@ func main() {
 	log.Info("main:sqlxConfig",
 		logger.String("host", cfg.PostgresHost),
 		logger.Int("port", cfg.PostgresPort),
-		logger.String("datbase", cfg.PostgresDatabase))
+		logger.String("database", cfg.PostgresDatabase))
 	connDb, err := db.ConnectToDb(cfg)
+	fmt.Println("error inr review", err)
 	if err != nil {
 		log.Fatal("sqlx connection to postgres error", logger.Error(err))
 	}
