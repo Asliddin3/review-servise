@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Asliddin3/review-servise/genproto/customer"
 	pb "github.com/Asliddin3/review-servise/genproto/review"
@@ -31,7 +32,7 @@ func (s *ReviewService) GetReviewById(ctx context.Context, req *pb.ReviewId) (*p
 	res, err := s.storage.Review().GetReviewById(req)
 	if err != nil {
 		s.logger.Error("error getting review by id", l.Any("error getting review by id", err))
-		return &pb.ReviewResp{}, status.Error(codes.Internal, "something went wrong")
+		return &pb.ReviewResp{}, status.Error(codes.Internal, fmt.Sprintf("wrong argument %s", err))
 	}
 	return res, nil
 }
@@ -40,7 +41,7 @@ func (s *ReviewService) GetCustomerReviews(ctx context.Context, req *pb.Customer
 	reivewList, err := s.storage.Review().GetCustomerReviews(req)
 	if err != nil {
 		s.logger.Error("error while getting customer reviews", l.Any("error gettin review customer", err))
-		return &pb.CustomerReviewList{}, status.Error(codes.Internal, "something went wrong")
+		return &pb.CustomerReviewList{}, status.Error(codes.Internal, fmt.Sprintf("%s", err))
 	}
 	return reivewList, nil
 }
@@ -49,13 +50,13 @@ func (s *ReviewService) GetPostReviews(ctx context.Context, req *pb.PostId) (*pb
 	res, err := s.storage.Review().GetPostReviews(req)
 	if err != nil {
 		s.logger.Error("error getting list reviews", l.Any("error getting reviews", err))
-		return &pb.ReviewsList{}, status.Error(codes.Internal, "errir getting reviews")
+		return &pb.ReviewsList{}, status.Error(codes.Internal, fmt.Sprintf("errir getting reviews %s", err))
 	}
 	for i, reviews := range res.Reviews {
 		customerResp, err := s.client.CustomerService().GetCustomerInfo(context.Background(), &customer.CustomerId{Id: reviews.CustomerId})
 		if err != nil {
 			s.logger.Error("error getting customer info", l.Any("error gettin customer info", err))
-			return &pb.ReviewsList{}, status.Error(codes.Internal, "something went wrong")
+			return &pb.ReviewsList{}, status.Error(codes.Internal, fmt.Sprintf("something went wrong %s", err))
 		}
 		reviews.FirstName = customerResp.FirstName
 		reviews.LastName = customerResp.LastName
